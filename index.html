@@ -454,7 +454,6 @@ select option { background: var(--bg3); }
 
 
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="text/javascript">
@@ -587,7 +586,7 @@ function guessLibFromTitle(t) {
 
 function parseXlsx(arrayBuffer) {
   const wb = XLSX.read(arrayBuffer, { type: 'array' });
-  const epSheets = wb.SheetNames.filter(n => /EP/i.test(n.replace(/['\s]/g, '')));
+  const epSheets = wb.SheetNames.filter(n => { const c = n.replace(/['\\s]/g,''); return /EP/i.test(c) || /^#\d+/.test(n.trim()) || /^\d+$/.test(c) || /第\d+/.test(c); });
   if (!epSheets.length) throw new Error('EPシートが見つかりません');
   const episodes = {};
   for (const sn of epSheets) {
@@ -1523,3 +1522,4 @@ renderHome();
 </script>
 </body>
 </html>
+
