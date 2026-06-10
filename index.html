@@ -268,6 +268,107 @@ select option { background: var(--bg3); }
       <!-- KPIs -->
       <div class="kpi-grid" id="kpiGrid"></div>
 
+      <!-- Cost summary panel -->
+      <div class="table-wrap" id="costPanel" style="display:none;margin-bottom:16px">
+        <!-- ヘッダー：内訳バーと総合計 -->
+        <div class="table-head" style="cursor:pointer" onclick="toggleSection('costPanelBody','costPanelToggle')">
+          <div style="flex:1">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <div class="table-title">費用サマリー</div>
+              <span id="costPanelToggle" style="font-size:11px;color:var(--text3)">▼</span>
+            </div>
+            <!-- 内訳バー -->
+            <div style="display:flex;height:6px;border-radius:3px;overflow:hidden;gap:1px;margin-bottom:6px;min-width:200px" id="costBreakdownBar"></div>
+            <!-- 内訳ラベル -->
+            <div style="display:flex;gap:12px;flex-wrap:wrap" id="costBreakdownLabels"></div>
+          </div>
+          <div style="text-align:right;padding-left:16px;flex-shrink:0">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px">総合計</div>
+            <div style="font-family:var(--mono);font-size:18px;font-weight:500" id="costTotalBadge">—</div>
+          </div>
+        </div>
+
+        <div id="costPanelBody">
+
+          <!-- 共通レイアウト: 左=ラベル+詳細、右=金額（縦揃え） -->
+          <!-- 書き下ろし -->
+          <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:12px">
+            <span style="width:8px;height:8px;background:#3D7EF5;border-radius:2px;flex-shrink:0;margin-top:3px;display:inline-block"></span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:6px">書き下ろし <span id="composerNameDisplay" style="color:var(--text2)"></span></div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <input type="number" id="budgetTotalInput" placeholder="金額を入力" style="width:150px;text-align:right;font-family:var(--mono);font-size:13px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);padding:4px 8px" oninput="onBudgetInput()">
+                <button class="btn btn-primary" style="font-size:11px;padding:4px 10px" data-action="saveBudgetTotal">保存</button>
+                <input type="text" id="composerNameInput" placeholder="作曲家名" style="width:130px;font-size:12px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);padding:4px 8px" oninput="onComposerInput()">
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px" id="budgetCalcKpis"></div>
+            </div>
+            <div style="font-family:var(--mono);font-size:15px;font-weight:500;min-width:130px;text-align:right;padding-top:2px" id="budgetDisplayAmt">—</div>
+          </div>
+
+          <!-- ライセンス -->
+          <div style="border-bottom:1px solid var(--border)">
+            <div style="padding:12px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer" onclick="toggleSection('clearanceDetail','clearanceDetailToggle')">
+              <span style="width:8px;height:8px;background:#F5A623;border-radius:2px;flex-shrink:0;margin-top:3px;display:inline-block"></span>
+              <div style="flex:1;font-size:11px;color:var(--text3)">
+                ライセンス <span id="clearanceDetailToggle" style="font-size:10px;color:var(--text3)">▼</span>
+              </div>
+              <div style="font-family:var(--mono);font-size:15px;font-weight:500;min-width:130px;text-align:right" id="clearanceTotalStr">—</div>
+            </div>
+            <div id="clearanceSummaryLine" style="padding:0 16px 10px 32px">
+              <div style="display:flex;gap:10px;flex-wrap:wrap" id="clearanceSummaryKpis"></div>
+            </div>
+            <div id="clearanceDetail" style="padding:0 16px 12px 32px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                <select id="clearanceInCtxFilter" onchange="renderPendingList()" style="font-size:11px;padding:3px 6px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text)">
+                  <option value="">In-context: すべて</option>
+                  <option value="yes">In-context: OK</option>
+                  <option value="no">In-context: NG</option>
+                </select>
+                <select id="clearanceSortKey" onchange="renderPendingList()" style="font-size:11px;padding:3px 6px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text)">
+                  <option value="title">楽曲名順</option>
+                  <option value="publisher">出版社名順</option>
+                  <option value="label">レーベル名順</option>
+                  <option value="pubAmt">出版許諾費</option>
+                  <option value="masterAmt">原盤許諾費</option>
+                  <option value="totalAmt">合計金額</option>
+                </select>
+                <button onclick="toggleClearanceSort()" id="clearanceSortDir" style="font-size:11px;padding:3px 8px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer">↑ 昇順</button>
+              </div>
+              <table style="font-size:11px;width:100%;border-collapse:collapse">
+                <thead><tr>
+                  <th>楽曲タイトル</th>
+                  <th>ステータス / In-ctx</th>
+                  <th>出版社名</th><th>出版許諾費</th>
+                  <th>レーベル名</th><th>原盤許諾費</th>
+                  <th>合計</th>
+                </tr></thead>
+                <tbody id="clearancePendingList"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- その他費用 -->
+          <div style="border-bottom:1px solid var(--border)">
+            <div style="padding:12px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer" onclick="toggleSection('extraCostSection','extraCostToggle')">
+              <span style="width:8px;height:8px;background:#1DB954;border-radius:2px;flex-shrink:0;margin-top:3px;display:inline-block"></span>
+              <div style="flex:1;font-size:11px;color:var(--text3)">
+                その他費用 <span id="extraCostToggle" style="font-size:10px;color:var(--text3)">▼</span>
+                <button class="btn" style="font-size:10px;padding:2px 8px;margin-left:8px" onclick="event.stopPropagation();addExtraCost()">＋ 追加</button>
+              </div>
+              <div style="font-family:var(--mono);font-size:15px;font-weight:500;min-width:130px;text-align:right" id="extraTotalStr">—</div>
+            </div>
+            <div id="extraCostSection" style="padding:0 16px 12px 32px">
+              <div id="extraCostRows"></div>
+            </div>
+          </div>
+
+
+
+        </div>
+        </div>
+      </div>
+
       <!-- Charts row -->
       <div class="two-col">
         <div class="panel">
@@ -297,9 +398,9 @@ select option { background: var(--bg3); }
 
       <!-- Delivery table -->
       <div class="table-wrap">
-        <div class="table-head">
-          <div class="table-title">M番号 納品チェック</div>
-          <div class="table-filters">
+        <div class="table-head" style="cursor:pointer" onclick="toggleSection('delivSection','delivToggle')">
+          <div class="table-title">M番号 納品チェック <span id="delivToggle" style="font-size:11px;color:var(--text3);margin-left:6px">▼</span></div>
+          <div class="table-filters" onclick="event.stopPropagation()">
             <input type="text" id="delivFilter" placeholder="Mナンバー..." style="width:120px" oninput="filterDeliv()">
             <select id="delivStatus" onchange="filterDeliv()">
               <option value="">すべて</option>
@@ -310,51 +411,48 @@ select option { background: var(--bg3); }
             </select>
           </div>
         </div>
-        <table>
-          <thead><tr><th>キュータイトル / 表記ゆれ詳細</th><th>納品</th><th>登場回数</th><th>登場EP</th></tr></thead>
-          <tbody id="delivBody"></tbody>
-        </table>
+        <div id="delivSection">
+          <table>
+            <thead><tr><th>キュータイトル / 表記ゆれ詳細</th><th>納品</th><th>登場回数</th><th>登場EP</th></tr></thead>
+            <tbody id="delivBody"></tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Library table -->
       <div class="table-wrap">
-        <div class="table-head">
-          <div class="table-title">ライブラリー会社別 使用数</div>
+        <div class="table-head" style="cursor:pointer" onclick="toggleSection('libSection','libToggle')">
+          <div class="table-title">ライブラリー会社別 使用数 <span id="libToggle" style="font-size:11px;color:var(--text3);margin-left:6px">▼</span></div>
         </div>
+        <div id="libSection">
         <table>
           <thead><tr><th>出版社 / ライブラリー</th><th>キュー数</th><th>全体比</th></tr></thead>
           <tbody id="libBody"></tbody>
         </table>
-      </div>
-
-      <!-- Budget section -->
-      <div class="table-wrap" id="budgetWrap">
-        <div class="table-head">
-          <div class="table-title">書き下ろし 費用管理</div>
-        </div>
-        <div style="padding:16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px" id="budgetKpis"></div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:8px">楽曲ごとに費用を入力（円）</div>
-          <div id="budgetRows"></div>
-          <div style="margin-top:12px;display:flex;gap:8px">
-            <button class="btn btn-primary" data-action="saveBudget" style="font-size:12px">保存</button>
-            <button class="btn btn-ghost" data-action="clearBudget" style="font-size:12px">クリア</button>
-          </div>
         </div>
       </div>
 
       <!-- EP detail -->
       <div class="table-wrap">
-        <div class="table-head">
-          <div class="table-title">EP別 詳細</div>
-          <div class="table-filters">
+        <div class="table-head" style="cursor:pointer" onclick="toggleSection('epDetailSection','epDetailToggle')">
+          <div class="table-title">EP別 詳細 <span id="epDetailToggle" style="font-size:11px;color:var(--text3);margin-left:6px">▼</span></div>
+          <div class="table-filters" onclick="event.stopPropagation()">
             <select id="epSelect" onchange="renderEpDetail()"></select>
+            <select id="epTypeFilter" onchange="renderEpDetail()">
+              <option value="">すべて</option>
+              <option value="commissioned">書き下ろし</option>
+              <option value="licensed">ライセンス曲</option>
+              <option value="library">ライブラリー</option>
+              <option value="pd">パブリックドメイン</option>
+              <option value="free">著作権フリー</option>
+            </select>
           </div>
         </div>
-        <table>
-          <thead><tr><th>#</th><th>キュータイトル</th><th>種別</th><th>納品</th></tr></thead>
+        <div id="epDetailSection"><table style="width:100%;border-collapse:collapse">
+          <thead><tr id="epDetailHead"><th>#</th><th>キュータイトル</th><th>種別</th><th>許諾</th><th>出版許諾費</th><th>原盤許諾費</th></tr></thead>
           <tbody id="epDetailBody"></tbody>
         </table>
+        </div>
       </div>
     </div>
 
@@ -389,6 +487,13 @@ select option { background: var(--bg3); }
       </div>
       <input type="file" id="newXlsxInput" accept=".xlsx,.xls" style="display:none" onchange="loadNewXlsx(this.files[0])">
     </div>
+    <div class="field">
+      <label>クリアランスシート xlsx <span style="font-size:10px;color:var(--text3)">(任意)</span></label>
+      <div class="upload-drop" id="newClearDrop" data-action="clickNewClear">
+        <div style="font-size:11px;color:var(--text3)" id="newClearLabel">クリックまたはドロップ</div>
+      </div>
+      <input type="file" id="newClearInput" accept=".xlsx,.xls" style="display:none" onchange="loadNewClear(this.files[0])">
+    </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" data-action="closeNewProject">キャンセル</button>
       <button class="btn btn-primary" id="createProjectBtn" data-action="createProject">作成</button>
@@ -410,6 +515,13 @@ select option { background: var(--bg3); }
         <div style="font-size:11px;color:var(--text3)" id="updateXlsxLabel">クリックまたはドロップ</div>
       </div>
       <input type="file" id="updateXlsxInput" accept=".xlsx,.xls" style="display:none" onchange="loadUpdateXlsx(this.files[0])">
+    </div>
+    <div class="field">
+      <label>クリアランスシート xlsx <span style="font-size:10px;color:var(--text3)">(任意)</span></label>
+      <div class="upload-drop" id="updateClearDrop" data-action="clickUpdateClear">
+        <div style="font-size:11px;color:var(--text3)" id="updateClearLabel">クリックまたはドロップ</div>
+      </div>
+      <input type="file" id="updateClearInput" accept=".xlsx,.xls" style="display:none" onchange="loadUpdateClear(this.files[0])">
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" data-action="closeUpload">キャンセル</button>
@@ -455,8 +567,10 @@ select option { background: var(--bg3); }
 
 
 
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script type="text/javascript">
+
 
 // ─── Constants ───────────────────────────────────────────────
 const M_RE = /^M\d+[A-Za-z]*$/i;
@@ -739,6 +853,148 @@ function computeStats(episodes, wavSet, excludeList) {
            durComm, durLib, durLic, durPd, durFree, durOth, durTotal };
 }
 
+// ─── Clearance Sheet Parser ──────────────────────────────────
+function findColIdx(headers, keywords) {
+  for (var i = 0; i < headers.length; i++) {
+    var h = String(headers[i] || '').replace(/\s/g, '').toLowerCase();
+    if (keywords.every(function(k){ return h.includes(k); })) return i;
+  }
+  return -1;
+}
+
+// デフォルトサンプル行かどうか判定（EYE OF THE TIGER / ANOUTA）
+var DEFAULT_TITLES = ['EYE OF THE TIGER', 'ANOUTA'];
+
+function parseClearance(arrayBuffer) {
+  var wb = XLSX.read(arrayBuffer, { type: 'array' });
+  var sn = wb.SheetNames.find(function(s){ return s.includes('既存曲'); }) || wb.SheetNames[0];
+  var rows = XLSX.utils.sheet_to_json(wb.Sheets[sn], { header: 1, defval: '' });
+  if (!rows.length) return { map: {}, totalJPY: 0, pendingList: [] };
+
+  var h = rows[0];
+  // 列インデックスをヘッダーから動的検索
+  var C = {
+    title:     findColIdx(h, ['楽曲名'])              >= 0 ? findColIdx(h, ['楽曲名'])              : 7,
+    artist:    findColIdx(h, ['アーティスト'])         >= 0 ? findColIdx(h, ['アーティスト'])         : 8,
+    progress:  findColIdx(h, ['進行状況'])             >= 0 ? findColIdx(h, ['進行状況'])             : 10,
+    role:      findColIdx(h, ['権利者区分'])           >= 0 ? findColIdx(h, ['権利者区分'])           : 12,
+    publisher: (function() {
+      // 権利者区分列の1つ右が出版社名/レーベル名
+      var roleCol = findColIdx(h, ['権利者区分']);
+      if (roleCol >= 0) return roleCol + 1;
+      return findColIdx(h, ['レーベル名']) >= 0 ? findColIdx(h, ['レーベル名']) : 13;
+    })(),
+    amountJPY: findColIdx(h, ['合意金額','日本円'])    >= 0 ? findColIdx(h, ['合意金額','日本円'])    : 19,
+    status:    findColIdx(h, ['許諾ステータス'])       >= 0 ? findColIdx(h, ['許諾ステータス'])       : 21,
+    inContext:  findColIdx(h, ['in-context'])          >= 0 ? findColIdx(h, ['in-context'])          :
+                findColIdx(h, ['incontext'])           >= 0 ? findColIdx(h, ['incontext'])           : 24,
+  };
+
+  var map = {};
+  var totalJPY = 0;
+  var pendingMap = {};
+
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    var title = String(r[C.title] || '').trim();
+    if (!title) continue;
+    // デフォルトサンプル曲を除外
+    if (DEFAULT_TITLES.indexOf(title.toUpperCase()) >= 0) continue;
+
+    var key       = title.toUpperCase();
+    var role      = String(r[C.role]      || '').toLowerCase();
+    var publisher = String(r[C.publisher] || '').trim();
+    var amtStr    = String(r[C.amountJPY] || '0').replace(/,/g,'').replace(/[^0-9.]/g,'');
+    var amount    = parseFloat(amtStr) || 0;
+    var progress  = String(r[C.progress]  || '').trim();
+    var status    = String(r[C.status]    || '').trim();
+    var inCtx     = String(r[C.inContext] || '').trim();
+
+    // 出版社かレーベルかを権利者区分で判断
+    var isPub    = role.includes('composition') || role.includes('publish');
+    var isMaster = role.includes('sound recording') || role.includes('record');
+    var isPD     = role.includes('public domain');
+
+    if (!map[key]) {
+      map[key] = {
+        title: title,
+        artist: String(r[C.artist] || '').trim(),
+        pub: [], master: [],
+        status: '', progress: '', inContext: ''
+      };
+    }
+    // 最新の値で上書き
+    if (status)   map[key].status    = status;
+    if (progress) map[key].progress  = progress;
+    if (inCtx)    map[key].inContext = inCtx;
+    if (!map[key].artist && r[C.artist]) map[key].artist = String(r[C.artist]).trim();
+
+    var entry = { publisher: publisher, amount: amount };
+
+    if (isPub || isPD) {
+      map[key].pub.push(isPD ? { publisher: 'Public Domain', amount: 0 } : entry);
+    } else if (isMaster) {
+      map[key].master.push(entry);
+    }
+
+    // 合計（日本円換算列なのでそのまま加算）
+    if (amount) totalJPY += amount;
+
+    // 申請済みリスト
+    if (progress.includes('申請済')) {
+      if (!pendingMap[key]) {
+        pendingMap[key] = {
+          title: title,
+          artist: String(r[C.artist]||'').trim(),
+          status: status, inContext: inCtx,
+          pub: [], master: []
+        };
+      }
+      if (pendingMap[key].status === '' && status) pendingMap[key].status = status;
+      if (pendingMap[key].inContext === '' && inCtx) pendingMap[key].inContext = inCtx;
+      if (isPub)    pendingMap[key].pub.push(entry);
+      if (isMaster) pendingMap[key].master.push(entry);
+    }
+  }
+
+  return { map: map, totalJPY: totalJPY, pendingList: Object.values(pendingMap) };
+}
+// 出版社リストと合計金額を表示
+function fmtMoney(entries) {
+  if (!entries || !entries.length) return '—';
+  // 出版社名リスト
+  const publishers = entries.map(e => e.publisher).filter(Boolean).join(', ');
+  // 合計金額（通貨ごとに集計）
+  const totals = {};
+  for (const e of entries) {
+    if (!e.amount) continue;
+    const cur = e.currency || 'JPY';
+    totals[cur] = (totals[cur] || 0) + e.amount;
+  }
+  const amountStr = Object.entries(totals).map(([cur, amt]) =>
+    (cur === 'JPY' ? '¥' : cur + ' ') + amt.toLocaleString()
+  ).join(' + ');
+  if (!publishers && !amountStr) return '—';
+  return [publishers, amountStr].filter(Boolean).join('<br><span style="font-family:var(--mono)">') + (amountStr ? '</span>' : '');
+}
+
+function fmtMoneySimple(entries) {
+  if (!entries || !entries.length) return '—';
+  var total = 0;
+  entries.forEach(function(e){ if(e.amount) total += e.amount; });
+  return total ? '¥' + total.toLocaleString() : '—';
+}
+
+function clearanceStatusBadge(status) {
+  if (!status) return '<span class="badge b-oth">未申請</span>';
+  const s = status.toLowerCase();
+  if (s.includes('approved') || s.includes('許諾済')) return '<span class="badge b-ok">✓ 許諾済</span>';
+  if (s.includes('public domain')) return '<span class="badge b-oth">PD</span>';
+  if (s.includes('pending') || s.includes('申請済')) return '<span class="badge b-warn">⏳ 申請中</span>';
+  if (s.includes('denied') || s.includes('拒否') || s.includes('申請しない')) return '<span class="badge b-ng">✗ 不許諾</span>';
+  return '<span class="badge b-oth">' + status.slice(0, 12) + '</span>';
+}
+
 // ─── Project CRUD ────────────────────────────────────────────
 function createProject() {
   const name = document.getElementById('newProjectName').value.trim();
@@ -752,13 +1008,16 @@ function createProject() {
     createdAt: new Date().toISOString(),
     episodes: newXlsxData,
     wavSet,
-    excludeList: ['Netflix Logo ID']  // 納品対象外タイトル
+    excludeList: ['Netflix Logo ID'],
+    clearance: newClearData || { map: {}, totalJPY: 0, pendingList: [] }
   };
   saveProjects();
   newXlsxData = null;
+  newClearData = null;
   document.getElementById('newProjectName').value = '';
   document.getElementById('newWavText').value = '';
   document.getElementById('newXlsxLabel').textContent = 'クリックまたはドロップ';
+  document.getElementById('newClearLabel').textContent = 'クリックまたはドロップ';
   closeModal('newProjectModal');
   renderSidebar();
   renderHome();
@@ -829,6 +1088,33 @@ function openDashboard(id) {
     <div class="kpi"><div class="kpi-label">書き下ろし (使用)</div><div class="kpi-value">${comm}</div><div class="kpi-sub">${pct(comm, total)}% / ${fmtDur(stats.durComm)}</div></div>
     <div class="kpi"><div class="kpi-label">ライブラリー</div><div class="kpi-value amber">${stats.lib}</div><div class="kpi-sub">${pct(stats.lib, total)}% / ${fmtDur(stats.durLib)}</div></div>
   `;
+
+  // Cost summary panel
+  const costPanel = document.getElementById('costPanel');
+  if (costPanel) {
+    costPanel.style.display = '';
+    const savedTotal = p.budgetTotal || 0;
+    document.getElementById('budgetTotalInput').value = savedTotal || '';
+    const composerEl = document.getElementById('composerNameInput');
+    if (composerEl) composerEl.value = p.composerName || '';
+    const composerDisp = document.getElementById('composerNameDisplay');
+    if (composerDisp) composerDisp.textContent = p.composerName ? '— ' + p.composerName : '';
+    updateBudgetCalc(savedTotal, stats);
+    renderExtraCosts();
+  }
+
+  // Clearance summary panel
+  const cl = currentDash.p.clearance || {};
+  const totalJPY = cl.totalJPY || 0;
+  const pending = cl.pendingList || [];
+  const clPanel = document.getElementById('costPanel');
+  if (clPanel && totalJPY > 0) {
+    document.getElementById('clearanceTotalStr').textContent = '¥' + totalJPY.toLocaleString();
+    // pendingListをグローバルに保持してフィルタ/ソートに使う
+    window._currentPendingList = pending;
+    renderPendingList();
+  }
+  updateGrandTotal();
 
   // Donut
   drawDonut(stats, stats);
@@ -924,12 +1210,10 @@ function openDashboard(id) {
       </td>
     </tr>`).join('');
 
-  // Budget section
-  renderBudget();
-
   // EP select
   const epSel = document.getElementById('epSelect');
-  epSel.innerHTML = eps.map(k => `<option value="${k}">${stats.epStats[k].label.replace('GAS', '').trim()}</option>`).join('');
+  epSel.innerHTML = '<option value="__all__">全エピソード</option>' +
+    eps.map(k => '<option value="' + k + '">' + stats.epStats[k].label.replace(/'/g,'').trim() + '</option>').join('');
 
   // Highlight in sidebar
   document.querySelectorAll('.nav-project').forEach(b => b.classList.remove('active'));
@@ -1014,29 +1298,81 @@ window.filterDeliv = function () {
 window.renderEpDetail = function () {
   if (!currentDash) return;
   const k = document.getElementById('epSelect').value;
-  const ep = currentDash.p.episodes[k];
-  if (!ep) return;
+  const typeFilter = (document.getElementById('epTypeFilter') || {}).value || '';
+  const clearance = (currentDash.p.clearance && currentDash.p.clearance.map) ? currentDash.p.clearance.map : (currentDash.p.clearance || {});
   const wav = currentDash.p.wavSet;
-  const tl = { commissioned: '<span class="badge b-comm">書き下ろし</span>', library: '<span class="badge b-lib">ライブラリー</span>', licensed: '<span class="badge b-lic">ライセンス</span>', other: '<span class="badge b-oth">その他</span>' };
-  document.getElementById('epDetailBody').innerHTML = ep.cues.map(c => {
-    let delivCell = '<span style="color:var(--text3)">—</span>';
-    if (c.type === 'commissioned') {
-      const d = checkDelivery(c.title, wav);
-      if (d.delivered && d.fuzzy) {
-        delivCell = '<span class="badge b-ok">✓</span>&nbsp;<span class="badge b-warn">⚠</span>';
-      } else if (d.delivered) {
-        delivCell = '<span class="badge b-ok">✓</span>';
-      } else {
-        delivCell = '<span class="badge b-ng">✗</span>';
-      }
+
+  // 全エピソードの場合は全cueを結合
+  let cues = [];
+  if (k === '__all__') {
+    for (const ep of Object.values(currentDash.p.episodes)) {
+      cues = cues.concat(ep.cues.map(c => ({ ...c, epLabel: ep.label.replace(/'/g,'').trim() })));
     }
-    return `<tr>
-      <td class="mono" style="color:var(--text3)">${c.seq}</td>
-      <td>${c.title}</td>
-      <td>${tl[c.type] || ''}</td>
-      <td>${delivCell}</td>
-    </tr>`;
-  }).join('');
+  } else {
+    const ep = currentDash.p.episodes[k];
+    if (!ep) return;
+    cues = ep.cues.map(c => ({ ...c, epLabel: '' }));
+  }
+
+  const tl = {
+    commissioned: '<span class="badge b-comm">書き下ろし</span>',
+    library:      '<span class="badge b-lib">ライブラリー</span>',
+    licensed:     '<span class="badge b-lic">ライセンス曲</span>',
+    pd:           '<span class="badge b-oth">PD</span>',
+    free:         '<span class="badge b-oth">著作権フリー</span>',
+    other:        '<span class="badge b-oth">その他</span>'
+  };
+
+  const rows = cues.filter(c => !typeFilter || c.type === typeFilter).map(c => {
+    const isLicensed = ['licensed','pd','free'].includes(c.type);
+    const cl = isLicensed ? clearance[c.title.toUpperCase()] : null;
+
+    // 許諾ステータス
+    const statusCell = isLicensed
+      ? (cl ? clearanceStatusBadge(cl.status) : '<span class="badge b-oth">未登録</span>')
+      : '';
+
+    // 出版許諾費（出版社名＋金額）
+    const pubCell = cl ? fmtMoneySimple(cl.pub) : (isLicensed ? '—' : '');
+    const pubPublisher = cl && cl.pub.length ? cl.pub.map(p=>p.publisher).filter(Boolean).join(', ') : '';
+
+    // 原盤許諾費（レーベル名＋金額）
+    const masterCell = cl ? fmtMoneySimple(cl.master) : (isLicensed ? '—' : '');
+    const masterPublisher = cl && cl.master.length ? cl.master.map(p=>p.publisher).filter(Boolean).join(', ') : '';
+
+    const titleCell = c.title +
+      (cl && cl.artist ? '<div style="font-size:10px;color:var(--text2);margin-top:1px">' + cl.artist + '</div>' : '') +
+      (pubPublisher ? '<div style="font-size:10px;color:var(--text3);margin-top:1px">出版: ' + pubPublisher + '</div>' : '') +
+      (masterPublisher ? '<div style="font-size:10px;color:var(--text3)">原盤: ' + masterPublisher + '</div>' : '');
+
+    return '<tr>' +
+      (k === '__all__' ? '<td style="font-size:10px;color:var(--text3)">' + (c.epLabel||'').replace('GAS','').replace(/EP0?/,'EP').trim() + '</td>' : '') +
+      '<td class="mono" style="color:var(--text3);font-size:11px">' + c.seq + '</td>' +
+      '<td style="font-size:12px">' + titleCell + '</td>' +
+      '<td>' + (tl[c.type] || '') + '</td>' +
+      '<td style="font-size:10px">' + statusCell + '</td>' +
+      '<td style="font-size:11px;font-family:var(--mono);color:var(--text2)">' + pubCell + '</td>' +
+      '<td style="font-size:11px;font-family:var(--mono);color:var(--text2)">' + masterCell + '</td>' +
+    '</tr>';
+  });
+
+  const allColspan = k === '__all__' ? 7 : 6;
+  document.getElementById('epDetailBody').innerHTML = rows.join('') ||
+    '<tr><td colspan="' + allColspan + '" style="text-align:center;color:var(--text3);padding:16px">該当なし</td></tr>';
+
+  // 全エピソード時はEP列をヘッダーに追加
+  const head = document.getElementById('epDetailHead');
+  if (head) {
+    if (k === '__all__' && !head.querySelector('.ep-col-th')) {
+      const th = document.createElement('th');
+      th.className = 'ep-col-th';
+      th.textContent = 'EP';
+      head.insertBefore(th, head.firstChild);
+    } else if (k !== '__all__') {
+      const epTh = head.querySelector('.ep-col-th');
+      if (epTh) epTh.remove();
+    }
+  }
 };
 
 // ─── Donut ───────────────────────────────────────────────────
@@ -1089,7 +1425,7 @@ function renderCompare() {
     return { id, name: p.name, eps: Object.keys(p.episodes).length, total: s.total,
       comm: s.comm, lib: s.lib, totalComm: s.totalComm, delivered: s.delivComm,
       commPct: pct(s.comm, s.total), libPct: pct(s.lib, s.total), delivPct: pct(s.delivComm, s.totalComm),
-      counts, durs, durTotal: s.durTotal, budget: p.budget || 0 };
+      counts, durs, durTotal: s.durTotal, budget: p.budget || 0, budgetTotal: p.budgetTotal || 0 };
   });
 
   const cols = `grid-template-columns: 160px repeat(${all.length}, 1fr)`;
@@ -1145,7 +1481,9 @@ function renderCompare() {
           <div class="compare-metric">種別構成<br><span style="color:var(--text3);font-size:10px">尺ベース</span></div>
           ${all.map(a => `<div style="padding:8px 12px">${stackedBar(a,'dur')}</div>`).join('')}
         </div>` : ''}
-        ${all.some(a=>a.budget>0) ? row('書き下ろし予算', a => a.budget ? `<span style="font-family:var(--mono)">¥${a.budget.toLocaleString()}</span>` : '—') : ''}
+        ${all.some(a=>a.budgetTotal>0) ? row('書き下ろし総額', a => a.budgetTotal ? `<span style="font-family:var(--mono)">¥${a.budgetTotal.toLocaleString()}</span>` : '—') : ''}
+        ${all.some(a=>a.budgetTotal>0) ? row('1曲あたり', a => { const n=Object.values(computeStats(projects[a.id].episodes,projects[a.id].wavSet,projects[a.id].excludeList||[]).commStats).filter(c=>!c.excluded).length; return n&&a.budgetTotal?`<span style="font-family:var(--mono)">¥${Math.round(a.budgetTotal/n).toLocaleString()}</span>`:'—'; }) : ''}
+        ${all.some(a=>a.budgetTotal>0) ? row('1分あたり', a => { const s=computeStats(projects[a.id].episodes,projects[a.id].wavSet,projects[a.id].excludeList||[]); const m=(s.durComm||0)/60; return m&&a.budgetTotal?`<span style="font-family:var(--mono)">¥${Math.round(a.budgetTotal/m).toLocaleString()}</span>`:'—'; }) : ''}
         ${all.some(a=>a.budget>0) ? row('1曲あたり平均', a => a.budget && a.totalComm ? `<span style="font-family:var(--mono)">¥${Math.round(a.budget/a.totalComm).toLocaleString()}</span>` : '—') : ''}
       </div>
     </div>`;
@@ -1232,6 +1570,8 @@ function applyUpdate() {
   const wavText = document.getElementById('updateWavText').value;
   if (wavText.trim()) p.wavSet = parseWav(wavText);
   if (updateXlsxData) p.episodes = updateXlsxData;
+  if (updateClearData) p.clearance = updateClearData;
+  else if (!p.clearance) p.clearance = { map: {}, totalAmounts: {}, pendingList: [] };
   p.updatedAt = new Date().toISOString();
   saveProjects();
   closeModal('uploadModal');
@@ -1312,6 +1652,285 @@ function toast(msg) {
   setTimeout(() => el.classList.remove('show'), 2500);
 }
 
+// ─── Budget Total ────────────────────────────────────────────
+function updateBudgetCalc(total, stats) {
+  const el = document.getElementById('budgetCalcKpis');
+  if (!el) return;
+  if (!total || !stats) { el.innerHTML = ''; return; }
+
+  // 書き下ろし楽曲数（納品対象外除く）
+  const commTitles = Object.values(stats.commStats).filter(c => !c.excluded);
+  const trackCount = commTitles.length;
+
+  // 書き下ろし合計尺（秒→分）
+  const durSec = stats.durComm || 0;
+  const durMin = durSec / 60;
+
+  const perTrack = trackCount > 0 ? Math.round(total / trackCount) : 0;
+  const perMin = durMin > 0 ? Math.round(total / durMin) : 0;
+
+  const epCount = Object.keys(currentDash.p.episodes).length;
+  const perEp = epCount > 0 ? Math.round(total / epCount) : 0;
+
+  el.innerHTML = [
+    { label: '1曲あたり', val: perTrack ? '¥' + perTrack.toLocaleString() : '—', sub: trackCount + '曲で按分' },
+    { label: '1分あたり', val: perMin ? '¥' + perMin.toLocaleString() : '—', sub: fmtDur(durSec) + 'で按分' },
+    { label: '1EPあたり', val: perEp ? '¥' + perEp.toLocaleString() : '—', sub: epCount + 'EPで按分' },
+  ].map(k => `
+    <div style="background:var(--bg3);border-radius:var(--r);padding:8px 14px;min-width:120px">
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px">${k.label}</div>
+      <div style="font-family:var(--mono);font-size:16px;font-weight:300">${k.val}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:2px">${k.sub}</div>
+    </div>`).join('');
+}
+
+window.onBudgetInput = function() {
+  if (!currentDash) return;
+  const val = Number(document.getElementById('budgetTotalInput').value) || 0;
+  updateBudgetCalc(val, currentDash.stats);
+  updateGrandTotal();
+};
+
+// ─── Pending List Render ─────────────────────────────────────
+var _clearanceSortAsc = true;
+
+window.toggleClearanceSort = function() {
+  _clearanceSortAsc = !_clearanceSortAsc;
+  var btn = document.getElementById('clearanceSortDir');
+  if (btn) btn.textContent = _clearanceSortAsc ? '↑ 昇順' : '↓ 降順';
+  renderPendingList();
+};
+
+window.renderPendingList = function() {
+  var pending = window._currentPendingList || [];
+  var el = document.getElementById('clearancePendingList');
+  if (!el) return;
+
+  var inCtxFilter = (document.getElementById('clearanceInCtxFilter') || {}).value || '';
+  var sortKey = (document.getElementById('clearanceSortKey') || {}).value || 'title';
+
+  // フィルター
+  var filtered = pending.filter(function(song) {
+    if (!inCtxFilter) return true;
+    var ok = song.inContext && song.inContext.toUpperCase().includes('YES');
+    return inCtxFilter === 'yes' ? ok : !ok;
+  });
+
+  // ソート
+  filtered.sort(function(a, b) {
+    var va, vb;
+    if (sortKey === 'title') {
+      va = a.title; vb = b.title;
+    } else if (sortKey === 'publisher') {
+      va = a.pub.map(function(p){return p.publisher;}).filter(Boolean).join('');
+      vb = b.pub.map(function(p){return p.publisher;}).filter(Boolean).join('');
+    } else if (sortKey === 'label') {
+      va = a.master.map(function(p){return p.publisher;}).filter(Boolean).join('');
+      vb = b.master.map(function(p){return p.publisher;}).filter(Boolean).join('');
+    } else if (sortKey === 'pubAmt') {
+      va = a.pub.reduce(function(s,p){return s+(p.amount||0);}, 0);
+      vb = b.pub.reduce(function(s,p){return s+(p.amount||0);}, 0);
+    } else if (sortKey === 'masterAmt') {
+      va = a.master.reduce(function(s,p){return s+(p.amount||0);}, 0);
+      vb = b.master.reduce(function(s,p){return s+(p.amount||0);}, 0);
+    } else if (sortKey === 'totalAmt') {
+      va = a.pub.reduce(function(s,p){return s+(p.amount||0);},0) + a.master.reduce(function(s,p){return s+(p.amount||0);},0);
+      vb = b.pub.reduce(function(s,p){return s+(p.amount||0);},0) + b.master.reduce(function(s,p){return s+(p.amount||0);},0);
+    }
+    var cmp = typeof va === 'number'
+      ? (va - vb)
+      : String(va||'').localeCompare(String(vb||''), 'ja');
+    return _clearanceSortAsc ? cmp : -cmp;
+  });
+
+  if (!filtered.length) {
+    el.innerHTML = '<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:12px">該当なし</td></tr>';
+    return;
+  }
+
+  el.innerHTML = filtered.map(function(song) {
+    var pubAmt    = song.pub.reduce(function(s,p){return s+(p.amount||0);},0);
+    var masterAmt = song.master.reduce(function(s,p){return s+(p.amount||0);},0);
+    var pubNames  = song.pub.map(function(p){return p.publisher;}).filter(function(p){return p && p !== 'undefined';}).join('<br>');
+    var masterNames = song.master.map(function(p){return p.publisher;}).filter(function(p){return p && p !== 'undefined';}).join('<br>');
+    var statusBadge = clearanceStatusBadge(song.status);
+    var inCtx = song.inContext || '';
+    var inCtxOk = inCtx.toUpperCase().includes('YES');
+    var inCtxBadge = inCtx
+      ? '<span class="badge ' + (inCtxOk ? 'b-ok' : 'b-ng') + '" style="font-size:9px;margin-left:3px">' + (inCtxOk ? 'In-ctx ✓' : 'In-ctx ✗') + '</span>'
+      : '';
+    return '<tr>' +
+      '<td style="font-size:12px">' + song.title + (song.artist ? '<div style="font-size:10px;color:var(--text2)">' + song.artist + '</div>' : '') + '</td>' +
+      '<td style="white-space:nowrap">' + statusBadge + inCtxBadge + '</td>' +
+      '<td style="font-size:11px;color:var(--text2)">' + (pubNames || '—') + '</td>' +
+      '<td style="font-family:var(--mono);font-size:11px">' + (pubAmt ? '¥' + pubAmt.toLocaleString() : '—') + '</td>' +
+      '<td style="font-size:11px;color:var(--text2)">' + (masterNames || '—') + '</td>' +
+      '<td style="font-family:var(--mono);font-size:11px">' + (masterAmt ? '¥' + masterAmt.toLocaleString() : '—') + '</td>' +
+      '<td style="font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text)">' + ((pubAmt+masterAmt) ? '¥' + (pubAmt+masterAmt).toLocaleString() : '—') + '</td>' +
+    '</tr>';
+  }).join('');
+};
+
+// ─── Composer ────────────────────────────────────────────────
+window.onComposerInput = function() {
+  if (!currentProjectId) return;
+  const val = document.getElementById('composerNameInput').value;
+  projects[currentProjectId].composerName = val;
+  saveProjects();
+  const disp = document.getElementById('composerNameDisplay');
+  if (disp) disp.textContent = val ? '— ' + val : '';
+};
+
+// ─── Grand Total ─────────────────────────────────────────────
+function updateGrandTotal() {
+  const budgetInput = document.getElementById('budgetTotalInput');
+  const budgetVal = budgetInput ? (Number(budgetInput.value) || 0) : 0;
+  const clTotal = (currentDash && currentDash.p.clearance) ? (currentDash.p.clearance.totalJPY || 0) : 0;
+  // 追加費用
+  const extraTotal = getExtraCostTotal();
+  const grand = budgetVal + clTotal + extraTotal;
+
+  // 各要素に反映
+  const grandEl = document.getElementById('grandTotalStr');
+  const badgeEl = document.getElementById('costTotalBadge');
+  const budgetDisp = document.getElementById('budgetDisplayAmt');
+  const extraTotalEl = document.getElementById('extraTotalStr');
+  if (grandEl) grandEl.textContent = grand ? '¥' + grand.toLocaleString() : '—';
+  if (badgeEl) badgeEl.textContent = grand ? '¥' + grand.toLocaleString() : '—';
+  if (budgetDisp) budgetDisp.textContent = budgetVal ? '¥' + budgetVal.toLocaleString() : '—';
+  if (extraTotalEl) extraTotalEl.textContent = extraTotal ? '¥' + extraTotal.toLocaleString() : '—';
+  // ライセンス畳んだ時のサマリー
+  const pending = window._currentPendingList || [];
+  const summaryLine = document.getElementById('clearanceSummaryLine');
+  if (pending.length) {
+    const pubTotal = pending.reduce(function(s,p){return s+p.pub.reduce(function(a,e){return a+(e.amount||0);},0);},0);
+    const masterTotal = pending.reduce(function(s,p){return s+p.master.reduce(function(a,e){return a+(e.amount||0);},0);},0);
+    const avgPub = pending.length ? Math.round(pubTotal/pending.length) : 0;
+    const avgMaster = masterTotal > 0 && pending.filter(function(p){return p.master.length>0;}).length
+      ? Math.round(masterTotal/pending.filter(function(p){return p.master.length>0;}).length) : 0;
+    const kpis = [
+      { label: '申請済み曲数', val: pending.length + '曲', sub: 'ライセンス曲合計' },
+      { label: '平均出版費', val: avgPub ? '¥' + avgPub.toLocaleString() : '—', sub: pending.length + '曲で按分' },
+      { label: '平均原盤費', val: avgMaster ? '¥' + avgMaster.toLocaleString() : '—',
+        sub: pending.filter(function(p){return p.master.length>0;}).length + '曲で按分' },
+    ];
+    const kpisEl = document.getElementById('clearanceSummaryKpis');
+    if (kpisEl) {
+      kpisEl.innerHTML = kpis.map(function(k) {
+        return '<div style="background:var(--bg3);border-radius:var(--r);padding:8px 12px;min-width:110px">' +
+          '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px">' + k.label + '</div>' +
+          '<div style="font-family:var(--mono);font-size:16px;font-weight:300">' + k.val + '</div>' +
+          '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + k.sub + '</div>' +
+          '</div>';
+      }).join('');
+    }
+  }
+  // その他費用の表示金額を更新
+  renderExtraCosts();
+
+  // 内訳バー＋ラベル
+  const categories = [
+    { label: '書き下ろし', val: budgetVal, color: '#3D7EF5' },
+    { label: 'ライセンス', val: clTotal,   color: '#F5A623' },
+    { label: 'その他',     val: extraTotal, color: '#1DB954' },
+  ].filter(c => c.val > 0);
+
+  const bar = document.getElementById('costBreakdownBar');
+  const labels = document.getElementById('costBreakdownLabels');
+  if (bar && grand > 0) {
+    bar.innerHTML = categories.map(c =>
+      '<div style="width:' + Math.round(c.val/grand*100) + '%;background:' + c.color + ';height:100%"></div>'
+    ).join('');
+    labels.innerHTML = categories.map(c =>
+      '<span style="font-size:10px;display:flex;align-items:center;gap:4px;color:var(--text2)">' +
+      '<span style="width:7px;height:7px;background:' + c.color + ';border-radius:1px;display:inline-block"></span>' +
+      c.label + ' <span style="font-family:var(--mono)">¥' + c.val.toLocaleString() + '</span></span>'
+    ).join('');
+  } else if (bar) {
+    bar.innerHTML = '';
+    if (labels) labels.innerHTML = '';
+  }
+}
+
+function getExtraCostTotal() {
+  var total = 0;
+  document.querySelectorAll('.extra-cost-input').forEach(function(el) {
+    total += Number(el.value) || 0;
+  });
+  return total;
+}
+
+window.addExtraCost = function() {
+  if (!currentProjectId) return;
+  const p = projects[currentProjectId];
+  if (!p.extraCosts) p.extraCosts = [];
+  p.extraCosts.push({ label: '', amount: 0 });
+  saveProjects();
+  renderExtraCosts();
+};
+
+function renderExtraCosts() {
+  if (!currentProjectId) return;
+  var p = projects[currentProjectId];
+  var costs = p.extraCosts || [];
+  var el = document.getElementById('extraCostRows');
+  if (!el) return;
+  if (!costs.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--text3)">まだ追加されていません</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < costs.length; i++) {
+    var lbl = (costs[i].label || '').replace(/"/g, '&quot;');
+    var amt = costs[i].amount || '';
+    var dispAmt = costs[i].amount ? '¥' + Number(costs[i].amount).toLocaleString() : '—';
+    html += '<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">' +
+      '<span style="width:8px;height:8px;flex-shrink:0;display:inline-block;opacity:0"></span>' +
+      '<input type="text" placeholder="例: Music Supervisor費" value="' + lbl + '" ' +
+      'style="flex:1;font-size:12px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);padding:4px 8px" ' +
+      'data-idx="' + i + '" data-field="label" onchange="saveExtraCostField(this)">' +
+      '<input type="number" class="extra-cost-input" placeholder="0" value="' + amt + '" ' +
+      'style="width:110px;text-align:right;font-family:var(--mono);font-size:12px;background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);padding:4px 8px" ' +
+      'data-idx="' + i + '" data-field="amount" onchange="saveExtraCostField(this)">' +
+      '<button onclick="removeExtraCost(' + i + ')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0 2px">✕</button>' +
+      '<div style="font-family:var(--mono);font-size:15px;font-weight:500;min-width:130px;text-align:right">' + dispAmt + '</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+
+window.saveExtraCostField = function(el) {
+  var i = parseInt(el.dataset.idx);
+  var field = el.dataset.field;
+  if (!currentProjectId) return;
+  var p = projects[currentProjectId];
+  if (!p.extraCosts || !p.extraCosts[i]) return;
+  p.extraCosts[i][field] = field === 'amount' ? (Number(el.value)||0) : el.value;
+  saveProjects();
+  updateGrandTotal();
+};
+
+
+window.updateExtraCost = function(i, labelVal, amountVal) {
+  if (!currentProjectId) return;
+  const p = projects[currentProjectId];
+  if (!p.extraCosts || !p.extraCosts[i]) return;
+  if (labelVal !== null) p.extraCosts[i].label = labelVal;
+  if (amountVal !== null) p.extraCosts[i].amount = Number(amountVal) || 0;
+  saveProjects();
+  updateGrandTotal();
+};
+
+window.removeExtraCost = function(i) {
+  if (!currentProjectId) return;
+  const p = projects[currentProjectId];
+  if (!p.extraCosts) return;
+  p.extraCosts.splice(i, 1);
+  saveProjects();
+  renderExtraCosts();
+  updateGrandTotal();
+};
+
 // ─── Budget ──────────────────────────────────────────────────
 function renderBudget() {
   if (!currentDash) return;
@@ -1389,6 +2008,15 @@ function saveBudget() {
   toast('費用を保存しました');
 }
 
+function saveBudgetTotal() {
+  if (!currentProjectId) return;
+  const val = Number(document.getElementById('budgetTotalInput').value) || 0;
+  projects[currentProjectId].budgetTotal = val;
+  saveProjects();
+  updateGrandTotal();
+  toast('¥' + val.toLocaleString() + ' を保存しました');
+}
+
 function clearBudget() {
   if (!currentProjectId) return;
   if (!confirm('費用データをすべてクリアしますか？')) return;
@@ -1396,6 +2024,48 @@ function clearBudget() {
   saveProjects();
   renderBudget();
   toast('クリアしました');
+}
+
+// ─── Toggle Section ──────────────────────────────────────────
+window.toggleSection = function(sectionId, toggleId) {
+  const section = document.getElementById(sectionId);
+  const toggle = document.getElementById(toggleId);
+  if (!section) return;
+  const isHidden = section.style.display === 'none';
+  section.style.display = isHidden ? '' : 'none';
+  if (toggle) toggle.textContent = isHidden ? '▼' : '▶';
+  // ライセンス詳細を閉じた時はサマリーを表示したまま
+  // （常時表示なので何もしない）
+};
+
+// ─── Clearance Loaders ───────────────────────────────────────
+let newClearData = null;
+let updateClearData = null;
+
+function loadNewClear(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const result = parseClearance(e.target.result);
+      newClearData = { map: result.map, totalJPY: result.totalJPY, pendingList: result.pendingList };
+      document.getElementById('newClearLabel').textContent = '✓ ' + Object.keys(result.map).length + '曲 読み込み済み';
+    } catch(err) { toast('クリアランスシート読み込みエラー: ' + err.message); }
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function loadUpdateClear(file) {
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try {
+      const result = parseClearance(e.target.result);
+      updateClearData = { map: result.map, totalJPY: result.totalJPY, pendingList: result.pendingList };
+      document.getElementById('updateClearLabel').textContent = '✓ ' + Object.keys(result.map).length + '曲 読み込み済み';
+    } catch(err) { toast('クリアランスシート読み込みエラー: ' + err.message); }
+  };
+  r.readAsArrayBuffer(file);
 }
 
 // ─── Exclude List ────────────────────────────────────────────
@@ -1444,6 +2114,9 @@ function migrateProjects() {
   let migrated = false;
   for (const p of Object.values(projects)) {
     if (!p.excludeList) { p.excludeList = ['Netflix Logo ID']; migrated = true; }
+    if (!p.clearance) { p.clearance = { map: {}, totalJPY: 0, pendingList: [] }; migrated = true; }
+    if (!p.extraCosts) { p.extraCosts = []; migrated = true; }
+    if (!p.composerName) { p.composerName = ''; }
     if (!p.episodes) continue;
     for (const ep of Object.values(p.episodes)) {
       if (!ep.cues) continue;
@@ -1492,9 +2165,12 @@ renderHome();
     'applyRename':    () => applyRename(),
     'applyExclude':   () => applyExclude(),
     'saveBudget':     () => saveBudget(),
+    'saveBudgetTotal':() => saveBudgetTotal(),
     'clearBudget':    () => clearBudget(),
     'clickNewXlsx':   () => document.getElementById('newXlsxInput').click(),
     'clickUpdateXlsx':() => document.getElementById('updateXlsxInput').click(),
+    'clickNewClear':  () => document.getElementById('newClearInput').click(),
+    'clickUpdateClear':() => document.getElementById('updateClearInput').click(),
   };
   // Wire up each button directly
   Object.keys(actions).forEach(action => {
@@ -1519,7 +2195,7 @@ renderHome();
   if (wavText) wavText.addEventListener('input', onWavInput);
 
 
+
 </script>
 </body>
 </html>
-
