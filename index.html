@@ -15,8 +15,8 @@
   --border: #2A2A2A;
   --border2: #333;
   --text: #F0EBE0;
-  --text2: #999;
-  --text3: #555;
+  --text2: #C0BAB0;
+  --text3: #999;
   --red: #E50914;
   --red-dim: rgba(229,9,20,0.12);
   --green: #1DB954;
@@ -30,7 +30,7 @@
   --sans: 'DM Sans', sans-serif;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 13px; line-height: 1.5; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 15px; line-height: 1.5; }
 a { color: inherit; text-decoration: none; }
 
 /* Layout */
@@ -44,7 +44,7 @@ a { color: inherit; text-decoration: none; }
 .logo-sub { font-size: 10px; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
 .sidebar-nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
 .nav-section { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 8px 4px; }
-.nav-btn { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: var(--r); cursor: pointer; color: var(--text2); font-size: 12px; border: none; background: none; width: 100%; text-align: left; transition: all 0.1s; }
+.nav-btn { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--r); cursor: pointer; color: var(--text2); font-size: 14px; border: none; background: none; width: 100%; text-align: left; transition: all 0.1s; }
 .nav-btn:hover { background: var(--bg3); color: var(--text); }
 .nav-btn.active { background: var(--bg4); color: var(--text); }
 .nav-btn .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); flex-shrink: 0; }
@@ -76,7 +76,7 @@ a { color: inherit; text-decoration: none; }
 /* Cards & KPIs */
 .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 24px; }
 .kpi { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px; }
-.kpi-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+.kpi-label { font-size: 12px; color: var(--text); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
 .kpi-value { font-family: var(--mono); font-size: 26px; font-weight: 300; }
 .kpi-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
 .kpi-value.green { color: var(--green); }
@@ -86,7 +86,7 @@ a { color: inherit; text-decoration: none; }
 /* Tables */
 .table-wrap { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 24px; }
 .table-head { padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.table-title { font-size: 12px; font-weight: 500; color: var(--text); }
+.table-title { font-size: 14px; font-weight: 500; color: var(--text); }
 .table-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 table { width: 100%; border-collapse: collapse; }
 th { padding: 8px 16px; text-align: left; font-size: 10px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--border); }
@@ -96,7 +96,7 @@ tr:hover td { background: var(--bg3); }
 .mono { font-family: var(--mono); }
 
 /* Badges */
-.badge { display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 500; white-space: nowrap; }
+.badge { display: inline-block; padding: 3px 8px; border-radius: 20px; font-size: 12px; font-weight: 500; white-space: nowrap; }
 .b-ok { background: var(--green-dim); color: var(--green); }
 .b-ng { background: var(--red-dim); color: #FF4B57; }
 .b-comm { background: var(--blue-dim); color: var(--blue); }
@@ -133,7 +133,7 @@ select option { background: var(--bg3); }
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
 @media(max-width:700px) { .two-col { grid-template-columns: 1fr; } }
 .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
-.panel-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+.panel-title { font-size: 13px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
 
 /* Bar chart */
 .bar-row { margin-bottom: 8px; }
@@ -151,7 +151,7 @@ select option { background: var(--bg3); }
 .donut-wrap { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 7px; font-size: 11px; margin-bottom: 5px; }
 .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.legend-val { margin-left: auto; padding-left: 12px; font-family: var(--mono); font-size: 11px; }
+.legend-val { margin-left: auto; padding-left: 12px; font-family: var(--mono); font-size: 13px; }
 
 /* Project cards */
 .project-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -216,7 +216,7 @@ select option { background: var(--bg3); }
 
 /* Divider */
 .divider { height: 1px; background: var(--border); margin: 24px 0; }
-.section-title { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+.section-title { font-size: 13px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
 
 /* Toast */
 .toast { position: fixed; bottom: 20px; right: 20px; background: var(--bg4); border: 1px solid var(--border2); border-radius: var(--r); padding: 10px 16px; font-size: 12px; z-index: 200; transform: translateY(60px); opacity: 0; transition: all 0.2s; }
@@ -1242,7 +1242,7 @@ window.openDashboard = function(id) {
     const s = stats.epStats[k];
     const short = s.label.replace('GAS', '').replace(/EP0?/, 'EP').trim();
     return `<div class="stacked-row">
-      <div class="stacked-label"><span>${short}</span><span style="font-family:var(--mono)">${s.total}</span></div>
+      <div class="stacked-label" style="font-size:13px"><span>${short}</span><span style="font-family:var(--mono)">${s.total}曲</span></div>
       <div class="stacked-track">
         ${['commissioned', 'library', 'licensed', 'other'].map(t => s[t] ? `<div style="width:${pct(s[t], s.total)}%;background:${COLORS[t]}"></div>` : '').join('')}
       </div>
@@ -1520,8 +1520,8 @@ function drawDonut(stats, fullStats) { fullStats = fullStats || {};
     const pct = Math.round(d.v / total * 100);
     return `<div class="legend-item">
       <div class="legend-dot" style="background:${d.c}"></div>
-      <span style="color:var(--text2)">${d.l}</span>
-      <span class="legend-val">${d.v} <span style="color:var(--text3)">(${pct}%)</span></span>
+      <span style="color:var(--text2);font-size:13px">${d.l}</span>
+      <span class="legend-val" style="font-size:13px">${d.v}曲 <span style="color:var(--text3)">(${pct}%)</span></span>
     </div>`;
   }).join('');
 }
@@ -1671,15 +1671,15 @@ function renderHome() {
         <button class="icon-btn" onclick="event.stopPropagation();deleteProject('${id}')" title="完全削除" style="color:var(--red)">✕</button>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">
-        <div class="card-name" style="font-size:20px;font-weight:600;line-height:1.2">
+        <div class="card-name" style="font-size:25px;font-weight:600;line-height:1.2">
           ${p.name}${isArchived ? ' <span style="font-size:10px;color:var(--text3);font-weight:400">[アーカイブ]</span>' : ''}
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
-          ${p.ownership ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;font-family:var(--mono);color:#fff;background:' + (OW_COLOR[p.ownership]||'#555') + '">' + p.ownership + '</span>' : ''}
-          ${p.format ? '<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;font-family:var(--mono);color:#fff;background:' + (FM_COLOR[p.format]||'#555') + '">' + p.format + '</span>' : ''}
+          ${p.ownership ? '<span style="font-size:14px;font-weight:600;padding:3px 10px;border-radius:4px;font-family:var(--mono);color:#fff;background:' + (OW_COLOR[p.ownership]||'#555') + '">' + p.ownership + '</span>' : ''}
+          ${p.format ? '<span style="font-size:14px;font-weight:600;padding:3px 10px;border-radius:4px;font-family:var(--mono);color:#fff;background:' + (FM_COLOR[p.format]||'#555') + '">' + p.format + '</span>' : ''}
         </div>
       </div>
-      ${p.launchYear ? '<div style="font-size:13px;font-weight:500;color:var(--text2);font-family:var(--mono);margin-bottom:4px">' + p.launchYear + '</div>' : ''}
+      ${p.launchYear ? '<div style="font-size:20px;font-weight:500;color:var(--text2);font-family:var(--mono);margin-bottom:4px">' + p.launchYear + '</div>' : ''}
       <div class="card-meta">${new Date(p.createdAt).toLocaleDateString('ja-JP')} · ${Object.keys(p.episodes).length} EP</div>
       <div class="card-stats">
         <div class="stat"><strong>${s.total}</strong> キュー</div>
@@ -2402,3 +2402,4 @@ renderHome();
 </script>
 </body>
 </html>
+
