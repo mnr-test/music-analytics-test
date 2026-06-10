@@ -36,7 +36,7 @@ a { color: inherit; text-decoration: none; }
 /* Layout */
 .app { display: flex; height: 100vh; overflow: hidden; }
 .sidebar { width: 220px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-.main { flex: 1; overflow-y: auto; }
+.main { flex: 1; overflow-y: auto; max-width: 1100px; }
 
 /* Sidebar */
 .sidebar-logo { padding: 20px 16px 14px; border-bottom: 1px solid var(--border); }
@@ -55,7 +55,7 @@ a { color: inherit; text-decoration: none; }
 .new-project-btn:hover { opacity: 0.85; }
 
 /* Views */
-.view { display: none; padding: 32px 36px; max-width: 1100px; }
+.view { display: none; padding: 32px 36px; max-width: 1100px; box-sizing: border-box; }
 .view.active { display: block; }
 
 /* Headers */
@@ -193,12 +193,25 @@ select option { background: var(--bg3); }
 
 /* Print styles */
 @media print {
-  .sidebar, .page-actions, .table-filters, .btn, .card-actions { display: none !important; }
-  .main { overflow: visible; }
-  .view.active { padding: 16px; }
-  body { background: white; color: black; }
-  .kpi, .panel, .table-wrap { border: 1px solid #ddd; }
-  .kpi-value { color: black !important; }
+  .sidebar, .page-actions, .table-filters, .btn, .card-actions,
+  #costPanelToggle, #delivToggle, #libToggle, #epDetailToggle,
+  #clearanceDetailToggle, #extraCostToggle { display: none !important; }
+  .app { display: block; height: auto; }
+  .main { overflow: visible; max-width: 100%; }
+  .view { display: none !important; padding: 12px; max-width: 100%; }
+  .view.active { display: block !important; }
+  body { background: white; color: #111; font-size: 11px; }
+  .kpi, .panel, .table-wrap { border: 1px solid #ccc; break-inside: avoid; }
+  .kpi-value, .kpi-value.green, .kpi-value.red, .kpi-value.amber { color: #111 !important; }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+  .two-col { grid-template-columns: 1fr 1fr; }
+  /* 折りたたまれていても全部表示 */
+  #delivSection, #libSection, #epDetailSection,
+  #clearanceDetail, #extraCostSection, #costPanelBody { display: block !important; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; }
+  thead { display: table-header-group; }
+  .badge { border: 1px solid #ccc; }
 }
 
 /* Divider */
@@ -249,13 +262,19 @@ select option { background: var(--bg3); }
         <div class="empty-title">プロジェクトがありません</div>
         <div class="empty-sub">「＋ 新規プロジェクト」からはじめてください</div>
       </div>
+      <div id="archiveSection"></div>
     </div>
 
     <!-- DASHBOARD VIEW -->
     <div class="view" id="view-dashboard">
       <div class="page-header">
         <div class="page-title" id="dashTitle">—</div>
-        <div class="page-sub" id="dashSub">—</div>
+        <div class="page-sub" id="dashSub" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span id="dashSubText">—</span>
+          <span id="ownershipTag" style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--blue-dim);color:var(--blue)"></span>
+          <span id="formatTag" style="font-size:10px;padding:2px 7px;border-radius:20px;background:var(--bg4);color:var(--text2)"></span>
+          <button class="btn btn-ghost" style="font-size:10px;padding:2px 8px" onclick="openTypeModal()">✏ 種別変更</button>
+        </div>
         <div class="page-actions">
           <button class="btn" data-action="exportCSV">↓ CSV エクスポート</button>
           <button class="btn" data-action="exportPDF">↓ PDF 印刷</button>
@@ -363,9 +382,6 @@ select option { background: var(--bg3); }
             </div>
           </div>
 
-
-
-        </div>
         </div>
       </div>
 
@@ -461,6 +477,19 @@ select option { background: var(--bg3); }
       <div class="page-header">
         <div class="page-title">作品比較</div>
         <div class="page-sub">複数プロジェクトを横並びで比較</div>
+        <div class="page-actions">
+          <select id="compareOwnershipFilter" onchange="renderCompare()" style="font-size:12px;padding:5px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text)">
+            <option value="">所有形態: すべて</option>
+            <option value="OO">OO — Owned Original</option>
+            <option value="LO">LO — Licensed Original</option>
+          </select>
+          <select id="compareFormatFilter" onchange="renderCompare()" style="font-size:12px;padding:5px 10px;border-radius:var(--r);border:0.5px solid var(--border2);background:var(--bg3);color:var(--text)">
+            <option value="">フォーマット: すべて</option>
+            <option value="FI">FI — Film</option>
+            <option value="SE">SE — Series</option>
+            <option value="US">US — Unscripted</option>
+          </select>
+        </div>
       </div>
       <div id="compareContent"></div>
     </div>
@@ -548,6 +577,34 @@ select option { background: var(--bg3); }
   </div>
 </div>
 
+<!-- Type Modal -->
+<div class="modal-overlay" id="typeModal">
+  <div class="modal" style="width:360px">
+    <div class="modal-title">作品種別を設定</div>
+    <div class="field">
+      <label>所有形態</label>
+      <select id="typeOwnership" style="width:100%">
+        <option value="">未設定</option>
+        <option value="OO">OO — Owned Original</option>
+        <option value="LO">LO — Licensed Original</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>フォーマット</label>
+      <select id="typeFormat" style="width:100%">
+        <option value="">未設定</option>
+        <option value="FI">FI — Film</option>
+        <option value="SE">SE — Series</option>
+        <option value="US">US — Unscripted</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('typeModal')">キャンセル</button>
+      <button class="btn btn-primary" onclick="applyType()">保存</button>
+    </div>
+  </div>
+</div>
+
 <!-- Rename Modal -->
 <div class="modal-overlay" id="renameModal">
   <div class="modal" style="width:360px">
@@ -573,6 +630,21 @@ select option { background: var(--bg3); }
 
 
 // ─── Constants ───────────────────────────────────────────────
+const OWNERSHIP = { OO: 'Owned Original', LO: 'Licensed Original' };
+const FORMAT    = { FI: 'Film', SE: 'Series', US: 'Unscripted' };
+
+function detectProjectType(name) {
+  const upper = (name || '').toUpperCase();
+  let ownership = '', format = '';
+  for (const k of Object.keys(OWNERSHIP)) {
+    if (upper.startsWith(k + '-') || upper.startsWith(k + ' ')) { ownership = k; break; }
+  }
+  for (const k of Object.keys(FORMAT)) {
+    const pat = '-' + k;
+    if (upper.includes(pat)) { format = k; break; }
+  }
+  return { ownership, format };
+}
 const M_RE = /^M\d+[A-Za-z]*$/i;
 const COLORS = {
   commissioned: '#3D7EF5',
@@ -1003,13 +1075,16 @@ function createProject() {
   const wavText = document.getElementById('newWavText').value;
   const wavSet = wavText.trim() ? parseWav(wavText) : new Set();
   const id = 'proj_' + Date.now();
+  const autoType = detectProjectType(name);
   projects[id] = {
     id, name,
     createdAt: new Date().toISOString(),
     episodes: newXlsxData,
     wavSet,
     excludeList: ['Netflix Logo ID'],
-    clearance: newClearData || { map: {}, totalJPY: 0, pendingList: [] }
+    clearance: newClearData || { map: {}, totalJPY: 0, pendingList: [] },
+    ownership: autoType.ownership,
+    format:    autoType.format
   };
   saveProjects();
   newXlsxData = null;
@@ -1025,7 +1100,7 @@ function createProject() {
   toast(`「${name}」を作成しました`);
 }
 
-function archiveProject(id) {
+window.archiveProject = function(id) {
   const p = projects[id];
   if (!p) return;
   p.archived = !p.archived;
@@ -1034,17 +1109,20 @@ function archiveProject(id) {
   renderHome();
   if (p.archived && currentProjectId === id) showView('home');
   toast(p.archived ? `「${p.name}」をアーカイブしました` : `「${p.name}」を復元しました`);
-}
+};
 
-function deleteProject(id) {
-  const name = projects[id]?.name;
-  if (!confirm(`「${name}」を完全削除しますか？この操作は取り消せません`)) return;
+window.deleteProject = function(id) {
+  const p = projects[id];
+  if (!p) return;
+  const archived = p.archived ? '' : 'アーカイブせずに';
+  if (!confirm(`「${p.name}」を${archived}完全削除しますか？\nこの操作は取り消せません`)) return;
   delete projects[id];
   saveProjects();
   renderSidebar();
   renderHome();
   if (currentProjectId === id) showView('home');
-}
+  toast(`「${p.name}」を削除しました`);
+};
 
 // ─── Views ───────────────────────────────────────────────────
 function showView(name) {
@@ -1056,7 +1134,7 @@ function showView(name) {
   if (name === 'compare') renderCompare();
 }
 
-function openDashboard(id) {
+window.openDashboard = function(id) {
   currentProjectId = id;
   const p = projects[id];
   const stats = computeStats(p.episodes, p.wavSet, p.excludeList || []);
@@ -1075,7 +1153,13 @@ function openDashboard(id) {
   }).map(s => ({ m: s.title, ok: s.delivered, fuzzy: s.fuzzy, excluded: s.excluded, cueKey: s.cueKey, fileKey: s.fileKey, count: s.count, epsStr: [...s.eps].sort().join(', ') }));
 
   document.getElementById('dashTitle').textContent = p.name;
-  document.getElementById('dashSub').textContent = `${Object.keys(p.episodes).length} エピソード · 最終更新: ${new Date(p.createdAt).toLocaleDateString('ja-JP')}`;
+  const dashSubText = document.getElementById('dashSubText');
+  if (dashSubText) dashSubText.textContent = `${Object.keys(p.episodes).length} エピソード · 最終更新: ${new Date(p.createdAt).toLocaleDateString('ja-JP')}`;
+  else document.getElementById('dashSub').textContent = `${Object.keys(p.episodes).length} エピソード · 最終更新: ${new Date(p.createdAt).toLocaleDateString('ja-JP')}`;
+  const owTag = document.getElementById('ownershipTag');
+  const fmTag = document.getElementById('formatTag');
+  if (owTag) owTag.textContent = p.ownership ? OWNERSHIP[p.ownership] || p.ownership : '';
+  if (fmTag) fmTag.textContent = p.format ? FORMAT[p.format] || p.format : '';
 
   // KPIs
   const { total, comm, lib, totalComm, delivComm } = stats;
@@ -1411,9 +1495,27 @@ function drawDonut(stats, fullStats) { fullStats = fullStats || {};
 
 // ─── Compare view ─────────────────────────────────────────────
 function renderCompare() {
-  const ids = Object.keys(projects).filter(id => !projects[id].archived);
+  const allIds = Object.keys(projects).filter(id => !projects[id].archived);
+  if (allIds.length < 2) {
+    document.getElementById('compareContent').innerHTML = '<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">比較するには2作品以上必要です</div><div class="empty-sub">プロジェクトを追加してください</div></div>';
+    return;
+  }
+  // フィルターUI
+  const filterOwnership = (document.getElementById('compareOwnershipFilter') || {}).value || '';
+  const filterFormat    = (document.getElementById('compareFormatFilter') || {}).value || '';
+  // 空＝全表示、値あり＝絞り込み（OO/LOとFI/SE/USは独立）
+  const ids = allIds.filter(id => {
+    const p = projects[id];
+    if (filterOwnership && (p.ownership || '') !== filterOwnership) return false;
+    if (filterFormat    && (p.format    || '') !== filterFormat)    return false;
+    return true;
+  });
+  if (ids.length < 1) {
+    document.getElementById('compareContent').innerHTML = '<div style="color:var(--text3);padding:24px;text-align:center">フィルター条件に該当するプロジェクトがありません</div>';
+    return;
+  }
   if (ids.length < 2) {
-    document.getElementById('compareContent').innerHTML = `<div class="empty"><div class="empty-icon">📊</div><div class="empty-title">比較するには2作品以上必要です</div><div class="empty-sub">プロジェクトを追加してください</div></div>`;
+    document.getElementById('compareContent').innerHTML = '<div style="color:var(--text3);padding:24px;text-align:center">比較には2作品以上必要です（現在' + ids.length + '作品）</div>';
     return;
   }
   const all = ids.map(id => {
@@ -1481,6 +1583,9 @@ function renderCompare() {
           <div class="compare-metric">種別構成<br><span style="color:var(--text3);font-size:10px">尺ベース</span></div>
           ${all.map(a => `<div style="padding:8px 12px">${stackedBar(a,'dur')}</div>`).join('')}
         </div>` : ''}
+        ${row('所有形態', a => { const p=projects[a.id]; const ow=p.ownership?OWNERSHIP[p.ownership]||p.ownership:'—'; const fm=p.format?FORMAT[p.format]||p.format:''; return `<span style="font-size:11px">${ow}${fm?' / '+fm:''}</span>`; })}
+        ${row('ライセンス曲数', a => { const s=computeStats(projects[a.id].episodes,projects[a.id].wavSet,projects[a.id].excludeList||[]); return `${s.lic||0} <span style="color:var(--text3);font-size:11px">(${pct(s.lic||0,s.total)}%)</span>`; })}
+        ${row('ライセンス総額', a => { const cl=projects[a.id].clearance||{}; return cl.totalJPY?`<span style="font-family:var(--mono)">¥${cl.totalJPY.toLocaleString()}</span>`:'—'; })}
         ${all.some(a=>a.budgetTotal>0) ? row('書き下ろし総額', a => a.budgetTotal ? `<span style="font-family:var(--mono)">¥${a.budgetTotal.toLocaleString()}</span>` : '—') : ''}
         ${all.some(a=>a.budgetTotal>0) ? row('1曲あたり', a => { const n=Object.values(computeStats(projects[a.id].episodes,projects[a.id].wavSet,projects[a.id].excludeList||[]).commStats).filter(c=>!c.excluded).length; return n&&a.budgetTotal?`<span style="font-family:var(--mono)">¥${Math.round(a.budgetTotal/n).toLocaleString()}</span>`:'—'; }) : ''}
         ${all.some(a=>a.budgetTotal>0) ? row('1分あたり', a => { const s=computeStats(projects[a.id].episodes,projects[a.id].wavSet,projects[a.id].excludeList||[]); const m=(s.durComm||0)/60; return m&&a.budgetTotal?`<span style="font-family:var(--mono)">¥${Math.round(a.budgetTotal/m).toLocaleString()}</span>`:'—'; }) : ''}
@@ -1504,9 +1609,9 @@ function renderHome() {
       <div class="card-actions">
         ${!isArchived ? `<button class="icon-btn" onclick="event.stopPropagation();openRenameModal('${id}')" title="名前を変更">✏</button>` : ''}
         <button class="icon-btn" onclick="event.stopPropagation();archiveProject('${id}')" title="${isArchived ? '復元' : 'アーカイブ'}">${isArchived ? '↩' : '⊘'}</button>
-        ${isArchived ? `<button class="icon-btn" onclick="event.stopPropagation();deleteProject('${id}')" title="完全削除" style="color:var(--red)">✕</button>` : ''}
+        <button class="icon-btn" onclick="event.stopPropagation();deleteProject('${id}')" title="完全削除" style="color:var(--red)">✕</button>
       </div>
-      <div class="card-name">${p.name}${isArchived ? ' <span style="font-size:10px;color:var(--text3)">[アーカイブ]</span>' : ''}</div>
+      <div class="card-name">${p.name}${isArchived ? ' <span style="font-size:10px;color:var(--text3)">[アーカイブ]</span>' : ''}${p.ownership||p.format ? ' <span style="font-size:10px;color:var(--text3);font-weight:400">' + [p.ownership,p.format].filter(Boolean).join('-') + '</span>' : ''}</div>
       <div class="card-meta">${new Date(p.createdAt).toLocaleDateString('ja-JP')} · ${Object.keys(p.episodes).length} EP</div>
       <div class="card-stats">
         <div class="stat"><strong>${s.total}</strong> キュー</div>
@@ -1520,12 +1625,7 @@ function renderHome() {
   document.getElementById('projectGrid').innerHTML = active.map(id => cardHtml(id, false)).join('');
 
   // archived section
-  let archiveSection = document.getElementById('archiveSection');
-  if (!archiveSection) {
-    archiveSection = document.createElement('div');
-    archiveSection.id = 'archiveSection';
-    document.getElementById('view-home').appendChild(archiveSection);
-  }
+  const archiveSection = document.getElementById('archiveSection');
   if (archived.length) {
     archiveSection.innerHTML = `
       <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin:8px 0 12px">アーカイブ済み</div>
@@ -2085,6 +2185,30 @@ function applyExclude() {
   toast(`対象外: ${lines.length}タイトルを設定しました`);
 }
 
+// ─── Project Type ────────────────────────────────────────────
+window.openTypeModal = function() {
+  if (!currentProjectId) return;
+  const p = projects[currentProjectId];
+  document.getElementById('typeOwnership').value = p.ownership || '';
+  document.getElementById('typeFormat').value = p.format || '';
+  document.getElementById('typeModal').classList.add('open');
+};
+window.applyType = function() {
+  if (!currentProjectId) return;
+  const p = projects[currentProjectId];
+  p.ownership = document.getElementById('typeOwnership').value;
+  p.format    = document.getElementById('typeFormat').value;
+  saveProjects();
+  closeModal('typeModal');
+  // タグ更新
+  const owTag = document.getElementById('ownershipTag');
+  const fmTag = document.getElementById('formatTag');
+  if (owTag) owTag.textContent = p.ownership ? OWNERSHIP[p.ownership] || p.ownership : '';
+  if (fmTag) fmTag.textContent = p.format ? FORMAT[p.format] || p.format : '';
+  renderHome();
+  toast('種別を更新しました');
+};
+
 // ─── Rename ──────────────────────────────────────────────────
 let renamingId = null;
 function openRenameModal(id) {
@@ -2117,6 +2241,7 @@ function migrateProjects() {
     if (!p.clearance) { p.clearance = { map: {}, totalJPY: 0, pendingList: [] }; migrated = true; }
     if (!p.extraCosts) { p.extraCosts = []; migrated = true; }
     if (!p.composerName) { p.composerName = ''; }
+    if (p.ownership === undefined) { const t = detectProjectType(p.name); p.ownership = t.ownership; p.format = t.format; migrated = true; }
     if (!p.episodes) continue;
     for (const ep of Object.values(p.episodes)) {
       if (!ep.cues) continue;
@@ -2199,3 +2324,4 @@ renderHome();
 </script>
 </body>
 </html>
+
