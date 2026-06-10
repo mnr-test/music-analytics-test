@@ -415,8 +415,8 @@ select option { background: var(--bg3); }
           </div>
         </div>
         <div class="panel">
-          <div class="panel-title">EP別 構成</div>
-          <div id="epStackedBars"></div>
+          <div class="panel-title">EP別 構成 <span style="font-size:11px;color:var(--text3);font-weight:400">— キュー数・割合</span></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px" id="epLegend"></div><div id="epStackedBars"></div>
         </div>
       </div>
 
@@ -425,9 +425,15 @@ select option { background: var(--bg3); }
         <div class="panel">
           <div class="panel-title">尺ベース 種別構成</div>
           <div id="durPanel"></div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:12px;color:var(--text3);margin-bottom:6px">作品全体尺（各EP）を入力 → 音楽使用率を計算</div>
+            <div id="epDurInputRows"></div>
+            <div id="musicUsageResult" style="margin-top:8px"></div>
+          </div>
         </div>
         <div class="panel">
-          <div class="panel-title">EP別 尺内訳</div>
+          <div class="panel-title">EP別 尺内訳 <span style="font-size:11px;color:var(--text3);font-weight:400">— 各EP合計尺・種別内訳</span></div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px" id="epDurLegend"></div>
           <div id="epDurBars"></div>
         </div>
       </div>
@@ -1241,14 +1247,35 @@ window.openDashboard = function(id) {
 
   // EP bars
   const eps = Object.keys(stats.epStats);
+  // 凡例
+  const legendHtml = Object.keys(TYPE_LABELS).map(k =>
+    `<span style="font-size:12px;display:flex;align-items:center;gap:5px">` +
+    `<span style="width:10px;height:10px;background:${COLORS[k]};border-radius:2px;flex-shrink:0"></span>` +
+    `${TYPE_LABELS[k]}</span>`
+  ).join('');
+  const legEl = document.getElementById('epLegend');
+  const legEl2 = document.getElementById('epDurLegend');
+  if (legEl) legEl.innerHTML = legendHtml;
+  if (legEl2) legEl2.innerHTML = legendHtml;
+
   document.getElementById('epStackedBars').innerHTML = eps.map(k => {
     const s = stats.epStats[k];
-    const short = s.label.replace('GAS', '').replace(/EP0?/, 'EP').trim();
-    return `<div class="stacked-row">
-      <div class="stacked-label" style="font-size:13px"><span>${short}</span><span style="font-family:var(--mono)">${s.total}曲</span></div>
-      <div class="stacked-track">
-        ${['commissioned', 'library', 'licensed', 'other'].map(t => s[t] ? `<div style="width:${pct(s[t], s.total)}%;background:${COLORS[t]}"></div>` : '').join('')}
+    const short = s.label.replace(/'/g,'').replace('GAS','').replace(/EP0?/,'EP').trim();
+    const types = ['commissioned','library','licensed','pd','free','other'];
+    const segments = types.map(t => {
+      const v = s[t] || 0;
+      const w = pct(v, s.total);
+      if (!v) return '';
+      return `<div style="width:${w}%;background:${COLORS[t]};display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:24px">
+        <span style="font-size:10px;color:rgba(255,255,255,0.9);font-weight:500;white-space:nowrap">${w>8?w+'%':''}</span>
+      </div>`;
+    }).join('');
+    return `<div class="stacked-row" style="margin-bottom:10px">
+      <div class="stacked-label" style="font-size:13px;margin-bottom:4px">
+        <span style="font-weight:500">${short}</span>
+        <span style="font-family:var(--mono);color:var(--text2)">${s.total}曲</span>
       </div>
+      <div style="display:flex;height:22px;border-radius:4px;overflow:hidden;gap:1px">${segments}</div>
     </div>`;
   }).join('') + `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px">
     ${Object.entries({ commissioned: '書き下ろし', library: 'ライブラリー', licensed: 'ライセンス', other: 'その他' }).map(([k, l]) =>
@@ -1293,20 +1320,29 @@ window.openDashboard = function(id) {
   document.getElementById('epDurBars').innerHTML = epKeys.map(k => {
     const s = stats.epStats[k];
     const epDur = s.durComm + s.durLib + s.durLic + (s.durPd||0) + (s.durFree||0) + s.durOth;
-    const short = s.label.replace('GAS','').replace(/EP0?/,'EP').trim();
-    return `<div class="stacked-row">
-      <div class="stacked-label">
-        <span>${short}</span>
-        <span style="font-family:var(--mono);font-size:11px">${fmtDur(epDur)}</span>
+    const short = s.label.replace(/'/g,'').replace('GAS','').replace(/EP0?/,'EP').trim();
+    const durTypes = [
+      { key:'commissioned', dur: s.durComm },
+      { key:'library',      dur: s.durLib  },
+      { key:'licensed',     dur: s.durLic  },
+      { key:'pd',           dur: s.durPd||0},
+      { key:'free',         dur: s.durFree||0},
+      { key:'other',        dur: s.durOth  },
+    ];
+    const segs = durTypes.map(({key,dur}) => {
+      if (!dur) return '';
+      const w = Math.round(dur/maxEpDur*100);
+      const wp = Math.round(dur/epDur*100);
+      return `<div style="width:${w}%;background:${COLORS[key]};display:flex;align-items:center;justify-content:center;overflow:hidden;min-width:28px">
+        <span style="font-size:10px;color:rgba(255,255,255,0.9);font-weight:500;white-space:nowrap">${wp>8?fmtDur(dur):''}</span>
+      </div>`;
+    }).join('');
+    return `<div class="stacked-row" style="margin-bottom:10px">
+      <div class="stacked-label" style="font-size:13px;margin-bottom:4px">
+        <span style="font-weight:500">${short}</span>
+        <span style="font-family:var(--mono);color:var(--text2)">${fmtDur(epDur)}</span>
       </div>
-      <div class="stacked-track" style="height:6px">
-        ${s.durComm?`<div style="width:${Math.round(s.durComm/maxEpDur*100)}%;background:${COLORS.commissioned}"></div>`:''}
-        ${s.durLib ?`<div style="width:${Math.round(s.durLib /maxEpDur*100)}%;background:${COLORS.library}"></div>`:''}
-        ${s.durLic ?`<div style="width:${Math.round(s.durLic /maxEpDur*100)}%;background:${COLORS.licensed}"></div>`:''}
-        ${s.durPd  ?`<div style="width:${Math.round(s.durPd  /maxEpDur*100)}%;background:${COLORS.pd}"></div>`:''}
-        ${s.durFree?`<div style="width:${Math.round(s.durFree/maxEpDur*100)}%;background:${COLORS.free}"></div>`:''}
-        ${s.durOth ?`<div style="width:${Math.round(s.durOth /maxEpDur*100)}%;background:${COLORS.other}"></div>`:''}
-      </div>
+      <div style="display:flex;height:22px;border-radius:4px;overflow:hidden;gap:1px">${segs}</div>
     </div>`;
   }).join('');
 
@@ -1329,6 +1365,9 @@ window.openDashboard = function(id) {
         </div>
       </td>
     </tr>`).join('');
+
+  // EP duration inputs
+  renderEpDurInputs(stats);
 
   // EP select
   const epSel = document.getElementById('epSelect');
@@ -1501,7 +1540,7 @@ function drawDonut(stats, fullStats) { fullStats = fullStats || {};
   const cv = document.getElementById('donutCanvas');
   if (!cv) return;
   const ctx = cv.getContext('2d');
-  const { total, comm, lib, lic, oth } = stats;
+  const { comm, lib, lic, oth } = stats;
   const data = [
     { l: TYPE_LABELS.commissioned, v: comm, c: COLORS.commissioned },
     { l: TYPE_LABELS.library,      v: lib,  c: COLORS.library },
@@ -1510,6 +1549,7 @@ function drawDonut(stats, fullStats) { fullStats = fullStats || {};
     { l: TYPE_LABELS.free,         v: stats.free || 0, c: COLORS.free },
     { l: TYPE_LABELS.other,        v: oth,  c: COLORS.other },
   ].filter(d => d.v > 0);
+  const total = data.reduce((s, d) => s + d.v, 0);
   let ang = -Math.PI / 2;
   ctx.clearRect(0, 0, 100, 100);
   for (const d of data) {
@@ -1518,14 +1558,18 @@ function drawDonut(stats, fullStats) { fullStats = fullStats || {};
     ctx.fillStyle = d.c; ctx.fill(); ang += sw;
   }
   ctx.beginPath(); ctx.arc(50, 50, 28, 0, Math.PI * 2); ctx.fillStyle = '#141414'; ctx.fill();
-  ctx.fillStyle = '#F0EBE0'; ctx.font = '500 12px DM Mono,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText(total, 50, 44); ctx.font = '9px DM Sans,sans-serif'; ctx.fillStyle = '#555'; ctx.fillText('total', 50, 57);
+  const topCat = data.reduce((a,b)=>b.v>a.v?b:a, data[0]);
+  const topPct = topCat ? Math.round(topCat.v/total*100)+'%' : '';
+  ctx.fillStyle = '#F0EBE0'; ctx.font = 'bold 13px DM Mono,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(total+'曲', 50, 40);
+  ctx.font = '10px DM Sans,sans-serif'; ctx.fillStyle = '#C0BAB0';
+  ctx.fillText('total', 50, 54);
   document.getElementById('donutLegend').innerHTML = data.map(d => {
     const pct = Math.round(d.v / total * 100);
     return `<div class="legend-item">
       <div class="legend-dot" style="background:${d.c}"></div>
-      <span style="color:var(--text2);font-size:13px">${d.l}</span>
-      <span class="legend-val" style="font-size:13px">${d.v}曲 <span style="color:var(--text3)">(${pct}%)</span></span>
+      <span style="color:var(--text2);font-size:15px">${d.l}</span>
+      <span class="legend-val" style="font-size:15px;font-weight:500">${d.v}曲 <span style="color:var(--text3);font-weight:400">(${pct}%)</span></span>
     </div>`;
   }).join('');
 }
@@ -1828,6 +1872,86 @@ function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg; el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ─── Episode Duration Inputs ─────────────────────────────────
+function renderEpDurInputs(stats) {
+  const el = document.getElementById('epDurInputRows');
+  if (!el) return;
+  const p = projects[currentProjectId];
+  if (!p) return;
+  const eps = Object.keys(stats.epStats).sort();
+  if (!p.epTotalDurs) p.epTotalDurs = {};
+
+  el.innerHTML = eps.map(k => {
+    const s = stats.epStats[k];
+    const short = s.label.replace(/'/g,'').replace('GAS','').replace(/EP0?/,'EP').trim();
+    const val = p.epTotalDurs[k] || '';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
+      '<span style="font-size:12px;color:var(--text2);min-width:50px">' + short + '</span>' +
+      '<input type="text" placeholder="1:02:53" value="' + val + '" ' +
+      'style="width:90px;font-size:12px;font-family:var(--mono);background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--r);color:var(--text);padding:3px 8px" ' +
+      'data-epkey="' + k + '" onchange="saveEpDur(this)">' +
+      '</div>';
+  }).join('');
+  updateMusicUsage(stats);
+}
+
+window.saveEpDur = function(el) {
+  if (!currentProjectId) return;
+  const p = projects[currentProjectId];
+  if (!p.epTotalDurs) p.epTotalDurs = {};
+  p.epTotalDurs[el.dataset.epkey] = el.value;
+  saveProjects();
+  if (currentDash) updateMusicUsage(currentDash.stats);
+};
+
+function parseDuration(str) {
+  // hh:mm:ss or mm:ss or seconds
+  if (!str) return 0;
+  const parts = String(str).trim().split(':').map(Number);
+  if (parts.length === 3) return parts[0]*3600 + parts[1]*60 + parts[2];
+  if (parts.length === 2) return parts[0]*60 + parts[1];
+  return Number(str) || 0;
+}
+
+function updateMusicUsage(stats) {
+  const el = document.getElementById('musicUsageResult');
+  if (!el) return;
+  const p = projects[currentProjectId];
+  if (!p || !p.epTotalDurs) { el.innerHTML = ''; return; }
+
+  const eps = Object.keys(stats.epStats);
+  let totalMusicSec = 0, totalEpSec = 0;
+  const rows = eps.map(k => {
+    const s = stats.epStats[k];
+    const epDur = s.durComm + s.durLib + s.durLic + (s.durPd||0) + (s.durFree||0) + s.durOth;
+    const totalSec = parseDuration(p.epTotalDurs[k]);
+    totalMusicSec += epDur;
+    totalEpSec += totalSec;
+    if (!totalSec) return null;
+    const usagePct = Math.round(epDur/totalSec*100);
+    const short = s.label.replace(/'/g,'').replace('GAS','').replace(/EP0?/,'EP').trim();
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' +
+      '<span style="font-size:12px;color:var(--text2);min-width:50px">' + short + '</span>' +
+      '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden">' +
+        '<div style="width:' + Math.min(usagePct,100) + '%;height:100%;background:var(--blue)"></div>' +
+      '</div>' +
+      '<span style="font-size:12px;font-family:var(--mono);min-width:38px;text-align:right">' + usagePct + '%</span>' +
+      '</div>';
+  }).filter(Boolean);
+
+  if (!rows.length) { el.innerHTML = ''; return; }
+
+  const totalPct = totalEpSec ? Math.round(totalMusicSec/totalEpSec*100) : 0;
+  el.innerHTML = rows.join('') +
+    '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px">' +
+    '<span style="font-size:12px;color:var(--text3);min-width:50px">平均</span>' +
+    '<div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden">' +
+      '<div style="width:' + Math.min(totalPct,100) + '%;height:100%;background:var(--blue)"></div>' +
+    '</div>' +
+    '<span style="font-size:13px;font-family:var(--mono);font-weight:500;min-width:38px;text-align:right">' + totalPct + '%</span>' +
+    '</div>';
 }
 
 // ─── Budget Total ────────────────────────────────────────────
@@ -2412,3 +2536,4 @@ renderHome();
 </script>
 </body>
 </html>
+
